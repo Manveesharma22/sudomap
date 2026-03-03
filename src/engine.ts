@@ -185,7 +185,7 @@ export class NormalizationEngine {
     for (let i = 0; i < n; i++) {
       giniSum += (2 * (i + 1) - n - 1) * scores[i];
     }
-    const giniCoeff = totalScore > 0 ? giniSum / (n * totalScore) : 0;
+    const giniCoeff = (totalScore > 0 && n > 0) ? giniSum / (n * totalScore) : 0;
     const equityIndex = Math.round((1 - Math.abs(giniCoeff)) * 100);
 
     // Category breakdown

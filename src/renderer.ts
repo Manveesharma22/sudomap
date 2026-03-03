@@ -90,7 +90,8 @@ export class ANSIRenderer {
     output += this.renderHeader(grid, frame);
 
     // ── Top border ──
-    output += `\x1b[38;5;${this.PALETTE.BORDER}m  ╔${'═'.repeat(grid.width * 2 + 2)}╗\x1b[0m\n`;
+    const borderWidth = Math.max(0, (grid.width || 0) * 2 + 2);
+    output += `\x1b[38;5;${this.PALETTE.BORDER}m  ╔${'═'.repeat(borderWidth)}╗\x1b[0m\n`;
 
     // ── Map body ──
     for (let y = 0; y < grid.height; y++) {
@@ -128,8 +129,11 @@ export class ANSIRenderer {
     let h = '';
     h += `\x1b[1;38;5;${this.PALETTE.HEADER}m  ╭─── SUDO MAP-THE-GAP ───────────────────────────╮\x1b[0m\n`;
     h += `\x1b[38;5;${this.PALETTE.HEADER}m  │\x1b[0m \x1b[1mCivic Equity Visualizer\x1b[0m`;
-    h += `\x1b[38;5;${this.PALETTE.DIM}m  Grid: ${grid.width}×${grid.height}  Frame: ${frame}\x1b[0m`;
-    const pad = 50 - 28 - `  Grid: ${grid.width}×${grid.height}  Frame: ${frame}`.length;
+    const gridWidth = grid.width || 0;
+    const gridHeight = grid.height || 0;
+    h += `\x1b[38;5;${this.PALETTE.DIM}m  Grid: ${gridWidth}×${gridHeight}  Frame: ${frame}\x1b[0m`;
+    const progressLabel = `  Grid: ${gridWidth}×${gridHeight}  Frame: ${frame}`;
+    const pad = 50 - 28 - progressLabel.length;
     h += ' '.repeat(Math.max(0, pad));
     h += `\x1b[38;5;${this.PALETTE.HEADER}m│\x1b[0m\n`;
     h += `\x1b[38;5;${this.PALETTE.HEADER}m  ╰─────────────────────────────────────────────────╯\x1b[0m\n\n`;
