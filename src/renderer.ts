@@ -90,7 +90,9 @@ export class ANSIRenderer {
     output += this.renderHeader(grid, frame);
 
     // ── Top border ──
-    output += `\x1b[38;5;${this.PALETTE.BORDER}m  ╔${'═'.repeat(grid.width * 2 + 2)}╗\x1b[0m\n`;
+    const widthVal = typeof grid.width === 'number' && !isNaN(grid.width) ? grid.width : 40;
+    const borderWidth = Math.max(0, widthVal * 2 + 2);
+    output += `\x1b[38;5;${this.PALETTE.BORDER}m  ╔${'═'.repeat(borderWidth)}╗\x1b[0m\n`;
 
     // ── Map body ──
     for (let y = 0; y < grid.height; y++) {
@@ -113,7 +115,7 @@ export class ANSIRenderer {
     }
 
     // ── Bottom border ──
-    output += `\x1b[38;5;${this.PALETTE.BORDER}m  ╚${'═'.repeat(grid.width * 2 + 2)}╝\x1b[0m\n`;
+    output += `\x1b[38;5;${this.PALETTE.BORDER}m  ╚${'═'.repeat(widthVal * 2 + 2)}╝\x1b[0m\n`;
 
     // ── Legend & Stats ──
     output += this.renderLegend(grid);
@@ -128,8 +130,11 @@ export class ANSIRenderer {
     let h = '';
     h += `\x1b[1;38;5;${this.PALETTE.HEADER}m  ╭─── SUDO MAP-THE-GAP ───────────────────────────╮\x1b[0m\n`;
     h += `\x1b[38;5;${this.PALETTE.HEADER}m  │\x1b[0m \x1b[1mCivic Equity Visualizer\x1b[0m`;
-    h += `\x1b[38;5;${this.PALETTE.DIM}m  Grid: ${grid.width}×${grid.height}  Frame: ${frame}\x1b[0m`;
-    const pad = 50 - 28 - `  Grid: ${grid.width}×${grid.height}  Frame: ${frame}`.length;
+    const gridWidth = typeof grid.width === 'number' && !isNaN(grid.width) ? grid.width : 0;
+    const gridHeight = typeof grid.height === 'number' && !isNaN(grid.height) ? grid.height : 0;
+    h += `\x1b[38;5;${this.PALETTE.DIM}m  Grid: ${gridWidth}×${gridHeight}  Frame: ${frame}\x1b[0m`;
+    const progressLabel = `  Grid: ${gridWidth}×${gridHeight}  Frame: ${frame}`;
+    const pad = 50 - 28 - progressLabel.length;
     h += ' '.repeat(Math.max(0, pad));
     h += `\x1b[38;5;${this.PALETTE.HEADER}m│\x1b[0m\n`;
     h += `\x1b[38;5;${this.PALETTE.HEADER}m  ╰─────────────────────────────────────────────────╯\x1b[0m\n\n`;
@@ -302,6 +307,18 @@ export class ANSIRenderer {
     }
 
     out += `\n\x1b[2m  Built for transparency. Built for the community.\x1b[0m\n`;
+    return out;
+  }
+
+  /**
+   * Render an obvious error box.
+   */
+  static renderError(message: string): string {
+    let out = '\x1b[2J\x1b[H\n\n';
+    out += `  \x1b[1;38;5;196m╔════════════════════ RENDERING ERROR ════════════════════╗\x1b[0m\n`;
+    out += `  \x1b[38;5;196m║\x1b[0m ${message.padEnd(54)} \x1b[38;5;196m║\x1b[0m\n`;
+    out += `  \x1b[38;5;196m║\x1b[0m \x1b[38;5;240mPlease try refreshing the map or switching scenarios.  \x1b[38;5;196m║\x1b[0m\n`;
+    out += `  \x1b[1;38;5;196m╚═════════════════════════════════════════════════════════╝\x1b[0m\n`;
     return out;
   }
 }

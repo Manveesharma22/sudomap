@@ -148,6 +148,7 @@ export default function App() {
   const [introStep, setIntroStep] = useState(0);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [smartSuggestions, setSmartSuggestions] = useState<{ id: string; text: string; action?: () => void }[]>([]);
+  const [termReady, setTermReady] = useState(false);
 
   const chatbot = useRef(new CivicChatbot(
     typeof process !== 'undefined' ? (process.env as any)?.GEMINI_API_KEY : undefined
@@ -178,34 +179,57 @@ export default function App() {
     return () => clearInterval(timer);
   }, [showIntro]);
 
-  // ── Terminal Setup ──
-  useEffect(() => {
-    if (!terminalRef.current || showIntro) return;
+  // ── Terminal Mounting & Diagnostics ──
+  const setTerminalRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      if (xtermRef.current) return; // Already initialized
 
-    const term = new Terminal({
-      cursorBlink: true,
-      theme: { background: '#0a0a0a', foreground: '#d4d4d4', cursor: '#10b981' },
-      fontFamily: 'JetBrains Mono, monospace',
-      fontSize: 16, /* Increased from 13 */
-      rows: 28, /* Reduced rows to fit larger font */
-      cols: 90,
-      scrollback: 1000,
-    });
+      const term = new Terminal({
+        cursorBlink: true,
+        theme: { background: '#0a0a0a', foreground: '#d4d4d4', cursor: '#10b981' },
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: 16,
+        rows: 28,
+        cols: 90,
+        scrollback: 1000,
+      });
 
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(terminalRef.current);
-    setTimeout(() => fitAddon.fit(), 100);
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(node);
 
-    xtermRef.current = term;
+      // Animation-aware fitting
+      const performFit = () => {
+        try { fitAddon.fit(); } catch (e) { console.warn('Fit error:', e); }
+      };
+      performFit();
+      setTimeout(performFit, 100);
+      setTimeout(performFit, 500); // Catch after animate-fade-in-up
 
-    const onResize = () => fitAddon.fit();
-    window.addEventListener('resize', onResize);
+      xtermRef.current = term;
+      setTermReady(true);
 
-    return () => {
-      window.removeEventListener('resize', onResize);
-      term.dispose();
-    };
+      // Global status for AI/Debugger
+      (window as any).termStatus = 'READY';
+      (window as any).termInstance = term;
+
+      term.write('\x1b[38;5;49m  [ SYSTEM ] TERMINAL INITIALIZED\x1b[0m\r\n');
+      term.write('\x1b[38;5;237m  [ INFO ] Waiting for data stream...\x1b[0m\r\n');
+
+      const onResize = () => performFit();
+      window.addEventListener('resize', onResize);
+      (term as any)._onResize = onResize;
+    } else {
+      if (xtermRef.current) {
+        const term = xtermRef.current;
+        if ((term as any)._onResize) {
+          window.removeEventListener('resize', (term as any)._onResize);
+        }
+        term.dispose();
+        xtermRef.current = null;
+        setTermReady(false);
+      }
+    }
   }, [showIntro]);
 
   const clearExistingInterval = useCallback(() => {
@@ -221,70 +245,91 @@ export default function App() {
 
   // ── Visualize ──
   const runVisualize = useCallback(() => {
-    if (!xtermRef.current) return;
+    if (!xtermRef.current || !termReady) return;
     clearExistingInterval();
     const term = xtermRef.current;
-    term.clear();
 
-    const scenario = getScenario();
-    const catFilter = selectedCategory !== 'all' ? selectedCategory as ResourceCategory : undefined;
+    try {
+      term.clear();
+      const scenario = getScenario();
+      const catFilter = selectedCategory !== 'all' ? selectedCategory as ResourceCategory : undefined;
 
-    const points = MockDataGenerator.generateScenario(scenario);
-    const grid = NormalizationEngine.normalize(points, { width: 40, height: 20, categoryFilter: catFilter });
-    const output = ANSIRenderer.render(grid, 0, heatmapMode);
+      const points = MockDataGenerator.generateScenario(scenario);
+      const grid = NormalizationEngine.normalize(points, { width: 40, height: 20, categoryFilter: catFilter });
+      const output = ANSIRenderer.render(grid, 0, heatmapMode);
 
-    term.write(output.replace(/\n/g, '\r\n'));
-    term.write(`\r\n\x1b[1;38;5;49m  ✓ Map loaded: ${scenario.name}${catFilter ? ` (${catFilter} only)` : ''}\x1b[0m\r\n`);
+      term.write(output.replace(/\n/g, '\r\n'));
+      term.write(`\r\n\x1b[1;38;5;49m  ✓ Map loaded: ${scenario.name}${catFilter ? ` (${catFilter} only)` : ''}\x1b[0m\r\n`);
 
-    const a = NormalizationEngine.analyze(grid, points);
-    setAnalysis(a);
-  }, [selectedScenario, selectedCategory, heatmapMode, getScenario, clearExistingInterval]);
+      const a = NormalizationEngine.analyze(grid, points);
+      setAnalysis(a);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      term.write(ANSIRenderer.renderError(msg).replace(/\n/g, '\r\n'));
+    }
+  }, [selectedScenario, selectedCategory, heatmapMode, getScenario, clearExistingInterval, termReady]);
 
   // ── Diff ──
   const runDiff = useCallback(() => {
-    if (!xtermRef.current) return;
+    if (!xtermRef.current || !termReady) return;
     clearExistingInterval();
     const term = xtermRef.current;
     term.clear();
 
-    const scenario = getScenario();
-    const { planned, actual } = MockDataGenerator.generatePlannedVsActual(scenario, 0.35);
-    const plannedGrid = NormalizationEngine.normalize(planned, { width: 40, height: 20 });
-    const actualGrid = NormalizationEngine.normalize(actual, { width: 40, height: 20 });
-    const diffGrid = NormalizationEngine.diff(actualGrid, plannedGrid);
+    try {
+      const scenario = getScenario();
+      const { planned, actual } = MockDataGenerator.generatePlannedVsActual(scenario, 0.35);
+      const plannedGrid = NormalizationEngine.normalize(planned, { width: 40, height: 20 });
+      const actualGrid = NormalizationEngine.normalize(actual, { width: 40, height: 20 });
+      const diffGrid = NormalizationEngine.diff(actualGrid, plannedGrid);
 
-    let frame = 0;
-    intervalRef.current = setInterval(() => {
-      const output = ANSIRenderer.render(diffGrid, frame++);
-      term.clear();
-      term.write(output.replace(/\n/g, '\r\n'));
-      if (frame > 16) {
-        clearExistingInterval();
-        term.write('\r\n\x1b[1;38;5;196m  ⚠  Gaps found! Flashing areas show where promises weren\'t kept.\x1b[0m\r\n');
-      }
-    }, 400);
+      let frame = 0;
+      intervalRef.current = setInterval(() => {
+        try {
+          const output = ANSIRenderer.render(diffGrid, frame++);
+          term.clear();
+          term.write(output.replace(/\n/g, '\r\n'));
+          if (frame > 16) {
+            clearExistingInterval();
+            term.write('\r\n\x1b[1;38;5;196m  ⚠  Gaps found! Flashing areas show where promises weren\'t kept.\x1b[0m\r\n');
+          }
+        } catch (err) {
+          clearExistingInterval();
+          const msg = err instanceof Error ? err.message : String(err);
+          term.write(ANSIRenderer.renderError(`Loop Error: ${msg}`).replace(/\n/g, '\r\n'));
+        }
+      }, 400);
 
-    const a = NormalizationEngine.analyze(actualGrid, actual);
-    setAnalysis(a);
-  }, [getScenario, clearExistingInterval]);
+      const a = NormalizationEngine.analyze(actualGrid, actual);
+      setAnalysis(a);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      term.write(ANSIRenderer.renderError(`Setup Error: ${msg}`).replace(/\n/g, '\r\n'));
+    }
+  }, [getScenario, clearExistingInterval, termReady]);
 
   // ── Analyze ──
   const runAnalyze = useCallback(() => {
-    if (!xtermRef.current) return;
+    if (!xtermRef.current || !termReady) return;
     clearExistingInterval();
     const term = xtermRef.current;
     term.clear();
 
-    const scenario = getScenario();
-    const points = MockDataGenerator.generateScenario(scenario);
-    const grid = NormalizationEngine.normalize(points, { width: 40, height: 20 });
-    const a = NormalizationEngine.analyze(grid, points);
+    try {
+      const scenario = getScenario();
+      const points = MockDataGenerator.generateScenario(scenario);
+      const grid = NormalizationEngine.normalize(points, { width: 40, height: 20 });
+      const a = NormalizationEngine.analyze(grid, points);
 
-    const output = ANSIRenderer.renderAnalysis(a);
-    term.write(output.replace(/\n/g, '\r\n'));
+      const output = ANSIRenderer.renderAnalysis(a);
+      term.write(output.replace(/\n/g, '\r\n'));
 
-    setAnalysis(a);
-  }, [getScenario, clearExistingInterval]);
+      setAnalysis(a);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      term.write(ANSIRenderer.renderError(msg).replace(/\n/g, '\r\n'));
+    }
+  }, [getScenario, clearExistingInterval, termReady]);
 
   // ── Smart Suggestions Logic ──
   useEffect(() => {
@@ -312,14 +357,14 @@ export default function App() {
 
   // ── Run on tab/config change ──
   useEffect(() => {
-    if (showIntro) return;
+    if (showIntro || !termReady) return;
     const timer = setTimeout(() => {
       if (activeTab === 'map') runVisualize();
       else if (activeTab === 'diff') runDiff();
       else if (activeTab === 'analyze') runAnalyze();
-    }, 150);
+    }, 250);
     return () => clearTimeout(timer);
-  }, [activeTab, selectedScenario, selectedCategory, bias, heatmapMode, showIntro]);
+  }, [activeTab, selectedScenario, selectedCategory, bias, heatmapMode, showIntro, termReady, runVisualize, runDiff, runAnalyze]);
 
   // ── Chat ──
   const handleChat = async () => {
@@ -742,7 +787,7 @@ export default function App() {
                       {getScenario().name} — {activeTab === 'map' ? 'Resource Map' : activeTab === 'diff' ? 'Gap Analysis' : 'Equity Report'}
                     </span>
                   </div>
-                  <div ref={terminalRef} style={{ width: '100%', height: '520px' }} />
+                  <div ref={setTerminalRef} style={{ width: '100%', height: '520px' }} />
                 </div>
               </div>
 
