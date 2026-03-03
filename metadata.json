@@ -1,0 +1,5 @@
+{
+  "name": "Sudo Map-The-Gap",
+  "description": "A terminal-based civic equity visualizer that transforms city resource data into a 16-bit RPG-style map to identify resource deserts.",
+  "requestFramePermissions": []
+}
