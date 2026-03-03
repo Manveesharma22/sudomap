@@ -1,167 +1,72 @@
-# 🗺️ Sudo Map-The-Gap
+# Sudo Map-The-Gap — Civic Equity Visualizer
 
-**A terminal-based civic equity visualizer** that transforms complex GeoJSON/CSV city resource data into **16-bit RPG-style world maps** rendered entirely in the terminal using ANSI escape codes.
+**Sudo Map-The-Gap** is a premium, high-impact civic equity visualizer designed for community organizers and city planners. It combines a retro 16-bit RPG aesthetic with advanced data science and context-aware AI to illuminate resource disparities across urban landscapes.
 
-> *"Every pixel represents a community."*
+![Sudo Map-The-Gap Overview](file:///Users/manvee/.gemini/antigravity/brain/7212c5a3-f57a-4ed5-9b5f-3b3cdd4a867a/refined_horizontal_dashboard.png)
 
----
+## Core Philosophy: "Visualizing the Invisible"
+In many cities, the gap between well-resourced neighborhoods and underserved communities is stark but often buried in complex spreadsheets. Sudo Map-The-Gap transforms this data into a playable, interactive map that anyone can understand, turning dry statistics into a compelling narrative for advocacy.
 
-## 🌍 Why This Matters
+## Key Features
 
-Resource allocation in cities is deeply unequal. **23.5 million Americans** live in food deserts. **45% of low-income neighborhoods** lack adequate public transit. Budget promises often don't match reality on the ground.
+### 🎨 Premium 16-bit Dashboard
+- **Horizontal Resource Breakdown**: A high-density grid showing distribution across categories like Transit, Food, Healthcare, and Housing.
+- **Glassmorphism Interface**: Sleek, modern UI with organic motion, staggered animations, and a rich dark theme.
+- **Terminal Visualizer**: A high-fidelity ANSI map renderer that supports heatmaps, severity-based diffing, and terrain transitions.
 
-But this data is usually buried in spreadsheets, GIS tools, and PDF reports — formats that community organizers can't quickly act on.
-
-**Map-The-Gap** changes this. By rendering resource density as an RPG-style map — where "lush forests" mean thriving areas and "barren deserts" mean underserved neighborhoods — we make disparity **visceral and scannable**.
-
----
-
-## ✨ Core Features
-
-### 🎮 16-Bit Visualization Engine
-- Maps resource scores to RPG-style tiles: 🌲🏠 (resourceful) vs ░⬛ (barren)
-- ANSI 256-color palette for rich, terminal-native rendering
-- Heatmap overlay mode with continuous color gradients
-- Sparkle animations for high-resource cells
-
-### 📊 Data Normalization Engine
-- Scales geographic coordinates to any terminal grid size
-- Category-based filtering (transit, food, parks, healthcare, education, housing)
-- Neighbor interpolation with distance decay for smooth terrain
-- Gini-based equity index calculation
-
-### ⚖️ Civic Diff ("Budget vs Reality")
-- Compares "Planned Budget" with "Actual Services Delivered"
-- Three severity levels: 🟡 Minor | 🟠 Moderate | 🔴 Critical
-- Animated flashing for disparity cells — impossible to ignore
-- Configurable disparity thresholds
+### 🧠 Intelligent Analysis
+- **Civic Engine 2.0**: Advanced Gini-based equity normalization and neighborhood interpolation.
+- **Smart Context**: A dynamic suggestion engine that provides tailored facts and tips based on the current city and analysis type.
+- **Animated Civic Diff**: A powerful tool to compare "Planned" vs "Actual" resource allocation, highlighting critical deserts with alarming clarity.
 
 ### 🤖 AI Civic Assistant
-- Gemini-powered chatbot for data analysis
-- Context-aware: knows your current map, equity metrics, and scenario
-- Falls back to rich template responses when offline
-- Understands questions about transit, food, healthcare, equity, and organizing
+- **Gemini-Powered Chat**: A context-aware chatbot that analyzes current map data to answer complex questions about community impact and potential interventions.
 
-### 🏙️ Preset City Scenarios
-- **New York City** — Manhattan-centric resources with outer borough gaps
-- **Chicago** — North-South divide with stark resource disparity
-- **San Francisco** — Tech corridor vs underserved neighborhoods
-- **Detroit** — Urban core rebuilding with widespread resource deserts
+## Tech Stack
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Vanilla CSS (Premium Motion Engine)
+- **Maps**: xterm.js (ANSI Renderer)
+- **AI**: Google Gemini API
+- **Icons**: Lucide React
 
-### 📈 Live Equity Metrics
-- Equity Index (0-100, Gini-based)
-- Coverage Percentage
-- Critical Desert count
-- Disparity Score
-- Category-level breakdown with visual bars
+## Getting Started
 
----
+### Prerequisites
+- Node.js (v18+)
+- npm
 
-## 🚀 Quick Start
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Manveesharma22/sudomap.git
+   cd sudomap
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up your environment variables:
+   ```bash
+   cp .env.example .env
+   # Add your VITE_GEMINI_API_KEY
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
+## CLI Usage
+Sudo Map-The-Gap also features a powerful command-line interface:
 ```bash
-# Install dependencies
-npm install
-
-# ─── Web UI ───
-npm run dev
-# Open http://localhost:3000
-
-# ─── CLI Commands ───
-# Visualize a city with 16-bit map
+# Visualize a city scenario
 npx tsx src/cli.ts visualize --scenario nyc
 
-# Visualize with filters
-npx tsx src/cli.ts visualize --scenario chicago --category food --heatmap
-
-# Compare planned vs actual services
-npx tsx src/cli.ts diff --scenario sf --disparity 0.4
-
-# Run equity analysis
-npx tsx src/cli.ts analyze --scenario detroit
-
-# List all available scenarios
-npx tsx src/cli.ts scenarios
+# Run an equity analysis
+npx tsx src/cli.ts analyze --scenario chicago
 ```
 
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐     ┌──────────────────────┐     ┌────────────────────┐
-│  GeoJSON / CSV   │────▶│  Normalization Engine │────▶│  16-bit ANSI       │
-│  City Data       │     │  (engine.ts)          │     │  Renderer          │
-└─────────────────┘     │  • Grid mapping       │     │  (renderer.ts)     │
-                        │  • Interpolation      │     │  • Tile mapping    │
-┌─────────────────┐     │  • Category filter    │     │  • Heatmap mode    │
-│  Mock Generator  │────▶│  • Equity analysis    │     │  • Diff animation  │
-│  (mock.ts)       │     └──────────────────────┘     └────────┬───────────┘
-│  • City presets  │                                           │
-│  • Bias control  │     ┌──────────────────────┐              ▼
-└─────────────────┘     │  AI Chatbot           │     ┌────────────────────┐
-                        │  (chatbot.ts)         │────▶│  Terminal / Web UI  │
-                        │  • Gemini integration │     │  (cli.ts / App.tsx) │
-                        │  • Civic insights     │     └────────────────────┘
-                        └──────────────────────┘
-```
+## Contributing
+We welcome contributions! Whether it's adding new city scenarios, improving the rendering engine, or refining the AI's civic knowledge, please feel free to open a PR.
 
 ---
-
-## 📁 File Structure
-
-```
-src/
-├── types.ts       # Core types: coordinates, grid cells, analysis, chatbot
-├── engine.ts      # Data normalization, grid mapping, equity analysis
-├── renderer.ts    # 16-bit ANSI rendering, heatmap, diff animation
-├── mock.ts        # Mock data generator with 4 city scenarios
-├── chatbot.ts     # AI civic assistant (Gemini + template fallback)
-├── cli.ts         # CLI entry point: visualize, diff, analyze, scenarios
-├── App.tsx        # Web UI: full interactive dashboard
-├── main.tsx       # React entry point
-└── index.css      # Design system: glassmorphism, animations, CRT effects
-```
-
----
-
-## 🎯 For Community Organizers
-
-1. **Load a scenario** that matches your city
-2. **Run the visualizer** to see resource distribution
-3. **Use Civic Diff** to compare what was promised vs what was delivered
-4. **Screenshot the results** for city council presentations
-5. **Ask the AI assistant** for context-aware civic insights
-6. **Run it over SSH** — no browser needed, works on any terminal
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Language | TypeScript |
-| Rendering | ANSI 256-color escape codes |
-| CLI | Commander.js |
-| AI | Google Gemini API |
-| Web Preview | React + Xterm.js |
-| Styling | Tailwind CSS + Custom Design System |
-
----
-
-## 🤝 Contributing
-
-This is open-source civic tech. Contributions welcome:
-
-- **Add new city scenarios** — submit PRs with real GeoJSON data
-- **Extend resource categories** — add broadband, childcare, etc.
-- **Improve the renderer** — new tile sets, terrain transitions
-- **Accessibility** — screen reader compatibility, high-contrast modes
-
----
-
-## 📜 License
-
-MIT — Built for transparency. Built for the community.
-
-*Because data is power, but only when communities can see it.*
+*Built with ❤️ for a more equitable future.*
