@@ -148,7 +148,6 @@ export default function App() {
   const [introStep, setIntroStep] = useState(0);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [smartSuggestions, setSmartSuggestions] = useState<{ id: string; text: string; action?: () => void }[]>([]);
-  const [termReady, setTermReady] = useState(false);
 
   const chatbot = useRef(new CivicChatbot(
     typeof process !== 'undefined' ? (process.env as any)?.GEMINI_API_KEY : undefined
@@ -199,7 +198,6 @@ export default function App() {
     setTimeout(() => fitAddon.fit(), 100);
 
     xtermRef.current = term;
-    setTermReady(true);
 
     const onResize = () => fitAddon.fit();
     window.addEventListener('resize', onResize);
@@ -223,7 +221,7 @@ export default function App() {
 
   // ── Visualize ──
   const runVisualize = useCallback(() => {
-    if (!xtermRef.current || !termReady) return;
+    if (!xtermRef.current) return;
     clearExistingInterval();
     const term = xtermRef.current;
     term.clear();
@@ -244,7 +242,7 @@ export default function App() {
 
   // ── Diff ──
   const runDiff = useCallback(() => {
-    if (!xtermRef.current || !termReady) return;
+    if (!xtermRef.current) return;
     clearExistingInterval();
     const term = xtermRef.current;
     term.clear();
@@ -272,7 +270,7 @@ export default function App() {
 
   // ── Analyze ──
   const runAnalyze = useCallback(() => {
-    if (!xtermRef.current || !termReady) return;
+    if (!xtermRef.current) return;
     clearExistingInterval();
     const term = xtermRef.current;
     term.clear();
@@ -314,14 +312,14 @@ export default function App() {
 
   // ── Run on tab/config change ──
   useEffect(() => {
-    if (showIntro || !termReady) return;
+    if (showIntro) return;
     const timer = setTimeout(() => {
       if (activeTab === 'map') runVisualize();
       else if (activeTab === 'diff') runDiff();
       else if (activeTab === 'analyze') runAnalyze();
-    }, 250); // Increased delay slightly
+    }, 150);
     return () => clearTimeout(timer);
-  }, [activeTab, selectedScenario, selectedCategory, bias, heatmapMode, showIntro, termReady, runVisualize, runDiff, runAnalyze]);
+  }, [activeTab, selectedScenario, selectedCategory, bias, heatmapMode, showIntro]);
 
   // ── Chat ──
   const handleChat = async () => {
